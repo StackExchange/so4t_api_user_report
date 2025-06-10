@@ -343,7 +343,8 @@ class WebClient(object):
         # For Stack Overflow Business or Basic, the webhook type isn't in the table, so it's
         # inferred from the URL
 
-        response = self.get_page_response(page_url)
+        self.s.headers.update({'User-Agent': 'so4t_api_user_report/1.0 (http://your-app-url.com; your-contact@email.com)'})
+        response = self.s.get(page_url)
         soup = BeautifulSoup(response.text, 'html.parser')
         webhook_rows = soup.find_all('tr')
 
