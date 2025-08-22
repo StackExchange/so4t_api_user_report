@@ -103,7 +103,7 @@ class V2Client(object):
         return filter_string
 
 
-    def get_all_questions(self, filter_string=''):
+    def get_all_questions(self, filter_string='', fromdate=None, todate=None):
 
         # API endpoint documentation: https://api.stackexchange.com/docs/questions
         endpoint = "/questions"
@@ -115,11 +115,15 @@ class V2Client(object):
         }
         if filter_string:
             params['filter'] = filter_string
+        if fromdate:
+            params['fromdate'] = fromdate
+        if todate:
+            params['todate'] = todate
     
         return self.get_items(endpoint_url, params)
 
 
-    def get_all_articles(self, filter_string=''):
+    def get_all_articles(self, filter_string='', fromdate=None, todate=None):
 
         # API endpoint documentation: https://api.stackexchange.com/docs/articles
         endpoint = "/articles"
@@ -131,6 +135,10 @@ class V2Client(object):
         }
         if filter_string:
             params['filter'] = filter_string
+        if fromdate:
+            params['fromdate'] = fromdate
+        if todate:
+            params['todate'] = todate
 
         return self.get_items(endpoint_url, params)
     
@@ -155,9 +163,9 @@ class V2Client(object):
 
         # API endpoint documentation: https://api.stackexchange.com/docs/reputation-history
         # Documentation says User IDs need to be sent in batches of 100, semicolon-separated
-        # However, testing shows that batches of 100 is too large, so batches of 50 are used
+        # However, testing shows that batches of 100 is too large, so batches of 25 are used
         # User IDs also need to be converted from INT to STR
-        batch_size = 50
+        batch_size = 25
         user_ids = [str(user_id) for user_id in user_ids]
         user_id_batches = [user_ids[i:i + batch_size] for i in range(0, len(user_ids), batch_size)]
 
@@ -175,6 +183,9 @@ class V2Client(object):
                 params['filter'] = filter_string
 
             reputation_history += self.get_items(endpoint_url, params)
+            
+            # Add delay between batches to avoid rate limiting
+            time.sleep(0.5)  # 500ms delay between batches
 
         return reputation_history
     
@@ -220,6 +231,9 @@ class V2Client(object):
                 backoff_time = response.json().get('backoff') + 1
                 print(f"API backoff request received. Waiting {backoff_time} seconds...")
                 time.sleep(backoff_time)
+            else:
+                # Add small delay between successful requests to prevent rate limiting
+                time.sleep(0.1)  # 100ms delay
 
             params['page'] += 1
 

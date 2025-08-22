@@ -46,8 +46,8 @@ def main():
     else:
         end_date = 2524626000 # 2050-01-01
 
-    users = process_api_data(api_data, start_date, end_date)
-    create_user_report(users, args.start_date, args.end_date)
+    users = process_api_data(api_data, start_date, end_date, args.output_name)
+    create_user_report(users, args.start_date, args.end_date, args.output_name)
 
 
 def get_args():
@@ -86,6 +86,32 @@ def get_args():
     parser.add_argument('--no-api',
                         action='store_true',
                         help='Skips API calls and uses data from JSON files in the data directory.')
+    parser.add_argument('--api-start-date',
+                        type=str,
+                        help='[OPTIONAL] Start date for API data filtering. '
+                        'Must be YYYY-MM-DD format. '
+                        'This filters data at the API level to reduce response size.')
+    parser.add_argument('--api-end-date',
+                        type=str,
+                        help='[OPTIONAL] End date for API data filtering. '
+                        'Must be YYYY-MM-DD format. '
+                        'This filters data at the API level to reduce response size.')
+    parser.add_argument('--max-users',
+                        type=int,
+                        help='[OPTIONAL] Maximum number of users to process. '
+                        'Useful for testing or processing subsets of large user bases.')
+    parser.add_argument('--user-id-start',
+                        type=int,
+                        help='[OPTIONAL] Start user ID for processing. '
+                        'Useful for processing users in chunks.')
+    parser.add_argument('--user-id-end',
+                        type=int,
+                        help='[OPTIONAL] End user ID for processing. '
+                        'Useful for processing users in chunks.')
+    parser.add_argument('--output-name',
+                        type=str,
+                        help='[OPTIONAL] Custom name for output files. '
+                        'If not specified, current date will be used.')
     # parser.add_argument('--web-client',
     #                     action='store_true',
     #                     help='Enables web-based data collection for data not available via API. Will '
@@ -95,6 +121,15 @@ def get_args():
 
 
 def get_api_data(args):
+
+    # Convert date strings to timestamps for API filtering
+    api_fromdate = None
+    api_todate = None
+    
+    if args.api_start_date:
+        api_fromdate = int(time.mktime(time.strptime(args.api_start_date, '%Y-%m-%d')))
+    if args.api_end_date:
+        api_todate = int(time.mktime(time.strptime(args.api_end_date, '%Y-%m-%d')))
 
     # Only create a web session if the --web-client flag is used
     # if args.web_client:
@@ -115,10 +150,10 @@ def get_api_data(args):
     
     # Get all questions, answers, comments, articles, tags, and SMEs via API
     so4t_data = {}
-    so4t_data['users'] = get_users(v2client, v3client)
+    so4t_data['users'] = get_users(v2client, v3client, args.max_users, args.user_id_start, args.user_id_end)
     so4t_data['reputation_history'] = get_reputation_history(v2client, so4t_data['users'])
-    so4t_data['questions'] = get_questions_answers_comments(v2client) # also gets answers/comments
-    so4t_data['articles'] = get_articles(v2client)
+    so4t_data['questions'] = get_questions_answers_comments(v2client, api_fromdate, api_todate) # also gets answers/comments
+    so4t_data['articles'] = get_articles(v2client, api_fromdate, api_todate)
     so4t_data['tags'] = get_tags(v3client) # also gets tag SMEs
 
     # Get additional data via web scraping
@@ -129,12 +164,15 @@ def get_api_data(args):
 
     # Export API data to JSON file
     for name, data in so4t_data.items():
-        export_to_json(name, data)
+        if args.output_name:
+            export_to_json(f'{name}_{args.output_name}', data)
+        else:
+            export_to_json(name, data)
 
     return so4t_data
 
 
-def get_users(v2client, v3client):
+def get_users(v2client, v3client, max_users=None, user_id_start=None, user_id_end=None):
 
     # Filter documentation: https://api.stackexchange.com/docs/filters
     if 'soedemo' in v2client.api_url: # for internal testing
@@ -152,40 +190,77 @@ def get_users(v2client, v3client):
     # Exclude users with an ID of less than 1 (i.e. Community user and user groups)
     v2_users = [user for user in v2_users if user['user_id'] > 1]
 
+    # Apply user ID range filtering if specified
+    if user_id_start is not None:
+        v2_users = [user for user in v2_users if user['user_id'] >= user_id_start]
+    if user_id_end is not None:
+        v2_users = [user for user in v2_users if user['user_id'] <= user_id_end]
+
+    # Apply max users limit if specified
+    if max_users is not None:
+        v2_users = v2_users[:max_users]
+        print(f"Limited to {max_users} users for processing")
+
     if 'soedemo' in v3client.api_url: # for internal testing only
         v2_users = [user for user in v2_users if user['user_id'] > 28000]
+
+    print(f"Processing {len(v2_users)} users...")
 
     v3_users = v3client.get_all_users()
     
     # Add additional user data from API v3 to user data from API v2
     # API v3 fields to add: 'email', 'jobTitle', 'department', 'externalId, 'role'
+    
+    # Create a lookup dictionary for v3 users for faster matching
+    v3_users_lookup = {v3_user['id']: v3_user for v3_user in v3_users}
+    
+    # Track users that need individual API calls (deactivated users)
+    deactivated_users = []
+    
     for user in v2_users:
-        for v3_user in v3_users:
-            if user['user_id'] == v3_user['id']:
-                user['email'] = v3_user['email']
-                user['title'] = v3_user['jobTitle']
-                user['department'] = v3_user['department']
-                user['external_id'] = v3_user['externalId']
-                if v3_user['role'] == 'Moderator':
-                    user['moderator'] = True
-                else:
-                    user['moderator'] = False
-                break
-        try:
-            user['moderator']
-        except KeyError: # if user is not found in v3 data, it means they're a deactivated user
-            # API v3 data can be obtained for deactivated users; it requires a separate API call
-            v3_user = v3client.get_user(user['user_id'])
+        v3_user = v3_users_lookup.get(user['user_id'])
+        if v3_user:
+            # User found in v3 data
             user['email'] = v3_user['email']
             user['title'] = v3_user['jobTitle']
             user['department'] = v3_user['department']
             user['external_id'] = v3_user['externalId']
-            user['is_deactivated'] = True
-
-            if v3_user['role'] == 'Moderator':
-                user['moderator'] = True
-            else:
-                user['moderator'] = False
+            user['moderator'] = (v3_user['role'] == 'Moderator')
+        else:
+            # User not found in v3 data - likely deactivated
+            deactivated_users.append(user)
+    
+    # Process deactivated users in batches to reduce API calls
+    if deactivated_users:
+        print(f"Found {len(deactivated_users)} deactivated users, processing in batches...")
+        batch_size = 10  # Process 10 deactivated users at a time
+        
+        for i in range(0, len(deactivated_users), batch_size):
+            batch = deactivated_users[i:i + batch_size]
+            print(f"Processing deactivated users batch {i//batch_size + 1}/{(len(deactivated_users) + batch_size - 1)//batch_size}")
+            
+            for user in batch:
+                try:
+                    v3_user = v3client.get_user(user['user_id'])
+                    user['email'] = v3_user['email']
+                    user['title'] = v3_user['jobTitle']
+                    user['department'] = v3_user['department']
+                    user['external_id'] = v3_user['externalId']
+                    user['is_deactivated'] = True
+                    user['moderator'] = (v3_user['role'] == 'Moderator')
+                except Exception as e:
+                    print(f"Failed to get data for deactivated user {user['user_id']}: {e}")
+                    # Set default values for failed users
+                    user['email'] = ''
+                    user['title'] = ''
+                    user['department'] = ''
+                    user['external_id'] = ''
+                    user['is_deactivated'] = True
+                    user['moderator'] = False
+            
+            # Add delay between batches to avoid rate limiting
+            if i + batch_size < len(deactivated_users):
+                time.sleep(1)  # 1 second delay between batches
 
     return v2_users
 
@@ -198,7 +273,7 @@ def get_reputation_history(v2client, users):
     return reputation_history
 
 
-def get_questions_answers_comments(v2client):
+def get_questions_answers_comments(v2client, fromdate=None, todate=None):
     
     # The API filter used for the /questions endpoint makes it so that the API returns
     # all answers and comments for each question. This is more efficient than making
@@ -233,12 +308,12 @@ def get_questions_answers_comments(v2client):
         filter_string = v2client.create_filter(filter_attributes)
     else: # Stack Overflow Business or Basic
         filter_string = '!X9DEEiFwy0OeSWoJzb.QMqab2wPSk.X2opZDa2L'
-    questions = v2client.get_all_questions(filter_string)
+    questions = v2client.get_all_questions(filter_string, fromdate=fromdate, todate=todate)
 
     return questions
 
 
-def get_articles(v2client):
+def get_articles(v2client, fromdate=None, todate=None):
 
     # Filter documentation: https://api.stackexchange.com/docs/filters
     if v2client.soe:
@@ -256,7 +331,7 @@ def get_articles(v2client):
     else: # Stack Overflow Business or Basic
         filter_string = '!*Mg4Pjg9LXr9d_(v'
 
-    articles = v2client.get_all_articles(filter_string)
+    articles = v2client.get_all_articles(filter_string, fromdate=fromdate, todate=todate)
 
     return articles
 
@@ -268,17 +343,37 @@ def get_tags(v3client):
     tags = v3client.get_all_tags()
 
     # Get subject matter experts (SMEs) for each tag. This API call is only available in v3.
-    # There's no way to get SME configurations in bulk, so this call must be made for each tag
+    # Process tags with SMEs in batches to reduce API calls
+    tags_with_smes = [tag for tag in tags if tag['subjectMatterExpertCount'] > 0]
+    
+    if tags_with_smes:
+        print(f"Found {len(tags_with_smes)} tags with SMEs, processing in batches...")
+        batch_size = 5  # Process 5 tags at a time
+        
+        for i in range(0, len(tags_with_smes), batch_size):
+            batch = tags_with_smes[i:i + batch_size]
+            print(f"Processing tag SMEs batch {i//batch_size + 1}/{(len(tags_with_smes) + batch_size - 1)//batch_size}")
+            
+            for tag in batch:
+                try:
+                    tag['smes'] = v3client.get_tag_smes(tag['id'])
+                except Exception as e:
+                    print(f"Failed to get SMEs for tag {tag['id']}: {e}")
+                    tag['smes'] = {'users': [], 'userGroups': []}
+            
+            # Add delay between batches to avoid rate limiting
+            if i + batch_size < len(tags_with_smes):
+                time.sleep(0.5)  # 500ms delay between batches
+    
+    # Set empty SMEs for tags without SMEs
     for tag in tags:
-        if tag['subjectMatterExpertCount'] > 0:
-            tag['smes'] = v3client.get_tag_smes(tag['id']) 
-        else:
+        if tag['subjectMatterExpertCount'] == 0:
             tag['smes'] = {'users': [], 'userGroups': []}
 
     return tags
 
 
-def process_api_data(api_data, start_date, end_date):
+def process_api_data(api_data, start_date, end_date, output_name=None):
 
     users = api_data['users']
     users = add_new_user_fields(users)
@@ -290,7 +385,10 @@ def process_api_data(api_data, start_date, end_date):
 
     # tags = process_communities(tags, api_data.get('communities'))
 
-    export_to_json('user_metrics', users)
+    if output_name:
+        export_to_json(f'user_metrics_{output_name}', users)
+    else:
+        export_to_json('user_metrics', users)
     
     return users
 
@@ -504,7 +602,7 @@ def process_users(users, start_date, end_date):
     return users
 
 
-def create_user_report(users, start_date, end_date):
+def create_user_report(users, start_date, end_date, output_name):
 
     # Create a list of user dictionaries, sorted by net reputation
     sorted_users = sorted(users, key=lambda k: k['net_reputation'], reverse=True)
@@ -556,7 +654,9 @@ def create_user_report(users, start_date, end_date):
     
 
     # Export user metrics to CSV
-    if start_date and end_date:
+    if output_name:
+        export_to_csv(f'user_metrics_{output_name}', user_metrics)
+    elif start_date and end_date:
         export_to_csv(f'user_metrics_{start_date}_to_{end_date}', user_metrics)
     else:
         export_to_csv('user_metrics', user_metrics)
