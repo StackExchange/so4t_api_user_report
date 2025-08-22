@@ -169,6 +169,22 @@ python3 so4t_user_report.py --url "https://SUBDOMAIN.stackenterprise.co" --key "
 # etc.
 ```
 
+### Error Handling and Reliability
+
+The script includes comprehensive error handling to prevent crashes and ensure reliable operation:
+
+#### Robust KeyError Prevention
+- **Safe field access**: All user data fields use `safe_get_user_field()` function to prevent KeyError crashes
+- **Missing field handling**: Users with missing `account_id`, `email`, `title`, or other fields won't cause script failures
+- **Graceful degradation**: Missing fields are populated with appropriate default values (empty strings, zeros, or False)
+- **Problematic user processing**: Script continues processing even when encountering users with incomplete data
+
+#### Common Issues Resolved
+- **`KeyError: 'account_id'`**: Fixed - script handles users without account_id fields
+- **Deactivated users**: Enhanced processing for users missing from API v3 responses
+- **Deleted users**: Proper handling of users with incomplete profile data
+- **API response variations**: Handles different response structures across Stack Overflow instances
+
 ### Performance Optimizations
 
 The script now includes several performance optimizations for large datasets:
@@ -278,6 +294,10 @@ Based on testing with the Stack Overflow Enterprise demo instance:
 **Token Expiration**
 - **Symptom**: "Expired access token" errors
 - **Solution**: Generate a new access token and re-run the script. Consider using `--no-api` with existing JSON data to avoid re-fetching all data.
+
+**KeyError Crashes (Fixed)**
+- **Symptom**: "KeyError: 'account_id'" or similar field errors causing script crashes
+- **Solution**: This issue has been resolved in the enhanced version. The script now handles missing user fields gracefully and continues processing. Users with missing fields will have empty values in the CSV output instead of causing crashes.
 
 #### Best Practices for Large Datasets
 

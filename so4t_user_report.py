@@ -221,11 +221,11 @@ def get_users(v2client, v3client, max_users=None, user_id_start=None, user_id_en
         v3_user = v3_users_lookup.get(user['user_id'])
         if v3_user:
             # User found in v3 data
-            user['email'] = v3_user['email']
-            user['title'] = v3_user['jobTitle']
-            user['department'] = v3_user['department']
-            user['external_id'] = v3_user['externalId']
-            user['moderator'] = (v3_user['role'] == 'Moderator')
+            user['email'] = safe_get_user_field(v3_user, 'email', '')
+            user['title'] = safe_get_user_field(v3_user, 'jobTitle', '')
+            user['department'] = safe_get_user_field(v3_user, 'department', '')
+            user['external_id'] = safe_get_user_field(v3_user, 'externalId', '')
+            user['moderator'] = (safe_get_user_field(v3_user, 'role', '') == 'Moderator')
         else:
             # User not found in v3 data - likely deactivated
             deactivated_users.append(user)
@@ -242,12 +242,12 @@ def get_users(v2client, v3client, max_users=None, user_id_start=None, user_id_en
             for user in batch:
                 try:
                     v3_user = v3client.get_user(user['user_id'])
-                    user['email'] = v3_user['email']
-                    user['title'] = v3_user['jobTitle']
-                    user['department'] = v3_user['department']
-                    user['external_id'] = v3_user['externalId']
+                    user['email'] = safe_get_user_field(v3_user, 'email', '')
+                    user['title'] = safe_get_user_field(v3_user, 'jobTitle', '')
+                    user['department'] = safe_get_user_field(v3_user, 'department', '')
+                    user['external_id'] = safe_get_user_field(v3_user, 'externalId', '')
                     user['is_deactivated'] = True
-                    user['moderator'] = (v3_user['role'] == 'Moderator')
+                    user['moderator'] = (safe_get_user_field(v3_user, 'role', '') == 'Moderator')
                 except Exception as e:
                     print(f"Failed to get data for deactivated user {user['user_id']}: {e}")
                     # Set default values for failed users
@@ -611,44 +611,44 @@ def create_user_report(users, start_date, end_date, output_name):
     user_metrics = []
     for user in sorted_users:
         user_metric = {
-            'User ID': user['user_id'],
-            'Display Name': user['display_name'],
-            'Net Reputation': user['net_reputation'],
-            'Account Longevity (Days)': user['account_longevity_days'],
-            'Account Inactivity (Days)': user['account_inactivity_days'],
+            'User ID': safe_get_user_field(user, 'user_id', ''),
+            'Display Name': safe_get_user_field(user, 'display_name', ''),
+            'Net Reputation': safe_get_user_field(user, 'net_reputation', 0),
+            'Account Longevity (Days)': safe_get_user_field(user, 'account_longevity_days', 0),
+            'Account Inactivity (Days)': safe_get_user_field(user, 'account_inactivity_days', 0),
 
-            'Questions': user['question_count'],
-            'Questions With No Answers': user['questions_with_no_answers'],
+            'Questions': safe_get_user_field(user, 'question_count', 0),
+            'Questions With No Answers': safe_get_user_field(user, 'questions_with_no_answers', 0),
             # 'Question Upvotes': user['question_upvotes'],
             # 'Question Downvotes': user['question_downvotes'],
 
-            'Answers': user['answer_count'],
+            'Answers': safe_get_user_field(user, 'answer_count', 0),
             # 'Answer Upvotes': user['answer_upvotes'],
             # 'Answer Downvotes': user['answer_downvotes'],
-            'Answers Accepted': user['answers_accepted'],
-            'Median Answer Time (Hours)': user['answer_response_time_median'],
+            'Answers Accepted': safe_get_user_field(user, 'answers_accepted', 0),
+            'Median Answer Time (Hours)': safe_get_user_field(user, 'answer_response_time_median', 0),
 
-            'Articles': user['article_count'],
+            'Articles': safe_get_user_field(user, 'article_count', 0),
             # 'Article Upvotes': user['article_upvotes'],
 
-            'Comments': user['comment_count'],
+            'Comments': safe_get_user_field(user, 'comment_count', 0),
 
-            'Total Upvotes': user['total_upvotes'],
-            'Total Downvotes': user['total_downvotes'],
+            'Total Upvotes': safe_get_user_field(user, 'total_upvotes', 0),
+            'Total Downvotes': safe_get_user_field(user, 'total_downvotes', 0),
 
             # 'Searches': user['searches'],
             # 'Communities': user['communities'],
-            'SME Tags': ', '.join(user['sme_tags']),
+            'SME Tags': ', '.join(safe_get_user_field(user, 'sme_tags', [])),
             # 'Watched Tags': user['watched_tags'],
 
-            'Account Status': user['account_status'],
-            'Moderator': user['moderator'],
+            'Account Status': safe_get_user_field(user, 'account_status', ''),
+            'Moderator': safe_get_user_field(user, 'moderator', False),
 
-            'Email': user['email'],
-            'Title': user['title'],
-            'Department': user['department'],
-            'External ID': user['external_id'],
-            'Account ID': user['account_id']
+            'Email': safe_get_user_field(user, 'email', ''),
+            'Title': safe_get_user_field(user, 'title', ''),
+            'Department': safe_get_user_field(user, 'department', ''),
+            'External ID': safe_get_user_field(user, 'external_id', ''),
+            'Account ID': safe_get_user_field(user, 'account_id', '')
         }
         user_metrics.append(user_metric)
     
@@ -718,6 +718,17 @@ def initialize_deleted_user(user_id, display_name):
     }
 
     return user
+
+
+def safe_get_user_field(user, field, default=''):
+    """
+    Safely get a user field, returning a default value if the field doesn't exist.
+    This prevents KeyError exceptions when processing user data.
+    """
+    try:
+        return user[field]
+    except (KeyError, TypeError):
+        return default
 
 
 def validate_user_id(user):
