@@ -1,5 +1,5 @@
 '''
-This Python script is a working proof of concept example of using Stack Overflow APIs for a User Report. 
+This Python script is a working proof of concept example of using Stack Internal APIs for a User Report. 
 If you run into difficulties, please leave feedback in the Github Issues.
 '''
 
@@ -55,24 +55,24 @@ def get_args():
     parser = argparse.ArgumentParser(
         prog='so4t_user_report.py',
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        description='Uses the Stack Overflow for Teams API to create \
+        description='Uses the Stack Internal API to create \
         a CSV report with user metrics.',
-        epilog = 'Example for Stack Overflow Business: \n'
+        epilog = 'Example for Stack Internal (Business): \n'
                 'python3 so4t_user_report.py --url "https://stackoverflowteams.com/c/TEAM-NAME" '
                 '--token "YOUR_TOKEN" \n\n'
-                'Example for Stack Overflow Enterprise: \n'
+                'Example for Stack Internal (Enterprise): \n'
                 'python3 so4t_user_report.py --url "https://SUBDOMAIN.stackenterprise.co" '
                 '--key "YOUR_KEY" --token "YOUR_TOKEN"\n\n')
     
     parser.add_argument('--url', 
                         type=str,
-                        help='[REQUIRED] Base URL for your Stack Overflow for Teams instance.')
+                        help='[REQUIRED] Base URL for your Stack Internal instance.')
     parser.add_argument('--token',
                         type=str,
-                        help='[REQUIRED] API token for your Stack Overflow for Teams instance.')
+                        help='[REQUIRED] API token for your Stack Internal instance.')
     parser.add_argument('--key',
                     type=str,
-                    help='API key value. Required if using Stack Overflow Enterprise.')
+                    help='API key value. Required if using Stack Internal (Enterprise).')
     parser.add_argument('--start-date',
                         type=str,
                         help='[OPTIONAL] Start date for filtering API data. '
@@ -177,12 +177,12 @@ def get_users(v2client, v3client, max_users=None, user_id_start=None, user_id_en
     # Filter documentation: https://api.stackexchange.com/docs/filters
     if 'soedemo' in v2client.api_url: # for internal testing
         filter_string = ''
-    elif v2client.soe: # Stack Overflow Enterprise requires the generation of a custom filter
+    elif v2client.soe: # Stack Internal (Enterprise) requires the generation of a custom filter
         filter_attributes = [
             "user.is_deactivated" # this attribute is only available in Enterprise and in API v2
         ]
         filter_string = v2client.create_filter(filter_attributes)
-    else: # Stack Overflow Business or Basic
+    else: # Stack Internal (Business) or Basic
         filter_string = ''
 
     v2_users = v2client.get_all_users(filter_string)
@@ -279,7 +279,7 @@ def get_questions_answers_comments(v2client, fromdate=None, todate=None):
     # all answers and comments for each question. This is more efficient than making
     # separate API calls for answers and comments.
     # Filter documentation: https://api.stackexchange.com/docs/filters
-    if v2client.soe: # Stack Overflow Enterprise requires the generation of a custom filter
+    if v2client.soe: # Stack Internal (Enterprise) requires the generation of a custom filter
         filter_attributes = [
             # "answer.body",
             # "answer.body_markdown",
@@ -306,7 +306,7 @@ def get_questions_answers_comments(v2client, fromdate=None, todate=None):
             "question.up_vote_count"
         ]
         filter_string = v2client.create_filter(filter_attributes)
-    else: # Stack Overflow Business or Basic
+    else: # Stack Internal (Business) or Basic
         filter_string = '!X9DEEiFwy0OeSWoJzb.QMqab2wPSk.X2opZDa2L'
     questions = v2client.get_all_questions(filter_string, fromdate=fromdate, todate=todate)
 
@@ -328,7 +328,7 @@ def get_articles(v2client, fromdate=None, todate=None):
             "comment.link"
         ]
         filter_string = v2client.create_filter(filter_attributes)
-    else: # Stack Overflow Business or Basic
+    else: # Stack Internal (Business) or Basic
         filter_string = '!*Mg4Pjg9LXr9d_(v'
 
     articles = v2client.get_all_articles(filter_string, fromdate=fromdate, todate=todate)
@@ -436,7 +436,7 @@ def add_new_user_fields(users):
                 user['account_status'] = 'Deactivated'
             else:
                 user['account_status'] = 'Active'
-        except KeyError: # Stack Overflow Business or Basic
+        except KeyError: # Stack Internal (Business) or Basic
             user['account_status'] = 'Registered'
     return users
 

@@ -1,5 +1,5 @@
-# Stack Overflow for Teams API User Report (so4t_api_user_report)
-A Python script that uses the Stack Overflow for Teams API creates a CSV report of how well each user performs. You can see an example of what the output looks like in the Examples directory ([here](https://github.com/StackExchange/so4t_user_report/blob/main/Examples/user_metrics.csv)).
+# Stack Internal API User Report (so4t_api_user_report)
+A Python script that uses the Stack Internal API creates a CSV report of how well each user performs. You can see an example of what the output looks like in the Examples directory ([here](https://github.com/StackExchange/so4t_user_report/blob/main/Examples/user_metrics.csv)).
 
 ## Table of Contents
 * [Requirements](https://github.com/StackExchange/so4t_api_user_report?tab=readme-ov-file#requirements)
@@ -16,7 +16,7 @@ A Python script that uses the Stack Overflow for Teams API creates a CSV report 
 * [Support, security, and legal](https://github.com/StackExchange/so4t_api_user_report?tab=readme-ov-file#support-security-and-legal)
 
 ## Requirements
-* A Stack Overflow for Teams instance (Basic, Business, or Enterprise); for Enterprise, version 2023.3 or later
+* A Stack Internal instance (Basic, Business, or Enterprise); for Enterprise, version 2023.3 or later
 * Python 3.8 or higher ([download](https://www.python.org/downloads/))
 * Operating system: Linux, MacOS, or Windows
 
@@ -36,20 +36,20 @@ If using the `--web-client` argument, there are additional requirements (details
 
 For the Business tier, you'll need a [personal access token](https://stackoverflowteams.help/en/articles/4385859-stack-overflow-for-teams-api) (PAT). You'll need to obtain an API key and an access token for Enterprise. Documentation for creating an Enterprise key and token can be found within your instance at this url: `https://[your_site]/api/docs/authentication`
 
-**Before proceeding, please note a critical step when creating your API Application in Stack Overflow Enterprise for Access Token generation:**
+**Before proceeding, please note a critical step when creating your API Application in Stack Internal (Enterprise) for Access Token generation:**
 
 **Generating an Access Token**
 
 To generate an Access Token for Enterprise, you must first ensure your API Application is correctly configured:
 
-* **API Application "Domain" Field Requirement:** When creating your API Application (where you obtain your Client ID and Client Secret), the "Domain" field *must* be populated with the base URL of your Stack Overflow Enterprise instance (e.g., `https://your.so-enterprise.url`). **Although the UI may mark this field as 'Optional,' failure to populate it will prevent Access Token generation and lead to a `"redirect_uri is not configured"` error during the OAuth flow.**
+* **API Application "Domain" Field Requirement:** When creating your API Application (where you obtain your Client ID and Client Secret), the "Domain" field *must* be populated with the base URL of your Stack Internal (Enterprise) instance (e.g., `https://your.so-enterprise.url`). **Although the UI may mark this field as 'Optional,' failure to populate it will prevent Access Token generation and lead to a `"redirect_uri is not configured"` error during the OAuth flow.**
 
 Once your API Application is configured with a valid Domain, follow these steps to generate your Access Token:
 
 * Go to the page where you created your API key. Take note of the "Client ID" associated with your API key.
 * Go to the following URL, replacing the base URL, the `client_id`, and the base URL of the `redirect_uri` with your own:
 `https://YOUR.SO-ENTERPRISE.URL/oauth/dialog?client_id=111&redirect_uri=https://YOUR.SO-ENTERPRISE.URL/oauth/login_success`
-* You may be prompted to log in to Stack Overflow Enterprise if you're not already. Either way, you'll be redirected to a page that simply says "Authorizing Application"
+* You may be prompted to log in to Stack Internal (Enterprise) if you're not already. Either way, you'll be redirected to a page that simply says "Authorizing Application"
 * In the URL of that page, you'll find your access token. Example: `https://YOUR.SO-ENTERPRISE.URL/oauth/login_success#access_token=YOUR_TOKEN`
 
 **Note on Access Token Requirements:**
@@ -90,7 +90,7 @@ Using `--no-api` would look like this: `python3 so4t_user_report.py --no-api --s
 
 ### Rate Limiting Prevention
 
-The script includes mechanisms to prevent rate limiting from the Stack Overflow for Teams API. This is particularly important when processing large datasets or when running the script frequently.
+The script includes mechanisms to prevent rate limiting from the Stack Internal API. This is particularly important when processing large datasets or when running the script frequently.
 
 * **API Key Usage:** The script will first attempt to use your API key for read-only requests. If the API key is rate limited, it will automatically switch to using an Access Token.
 * **Access Token Management:** The script manages multiple Access Tokens if needed, ensuring that if one token expires, the script can continue using others.
@@ -183,7 +183,7 @@ The script includes comprehensive error handling to prevent crashes and ensure r
 - **`KeyError: 'account_id'`**: Fixed - script handles users without account_id fields
 - **Deactivated users**: Enhanced processing for users missing from API v3 responses
 - **Deleted users**: Proper handling of users with incomplete profile data
-- **API response variations**: Handles different response structures across Stack Overflow instances
+- **API response variations**: Handles different response structures across Stack Internal instances
 
 ### Performance Optimizations
 
@@ -263,7 +263,7 @@ python3 so4t_user_report.py \
 
 ### Performance Benchmarks
 
-Based on testing with the Stack Overflow Enterprise demo instance:
+Based on testing with the Stack Internal (Enterprise) demo instance:
 
 | Dataset Size | Processing Time | Data Volume | API Calls |
 |--------------|-----------------|-------------|-----------|
@@ -345,4 +345,4 @@ Based on testing with the Stack Overflow Enterprise demo instance:
 ## Support, security, and legal
 If you encounter problems using the script, please leave feedback in the Github Issues. You can also clone and change the script to suit your needs. It is provided as-is, with no warranty or guarantee of any kind.
 
-All data is handled locally on the device from which the script is run. The script does not transmit data to other parties like Stack Overflow. All API calls performed are read-only, so there is no risk of editing or adding content to your Stack Overflow for Teams instance.
+All data is handled locally on the device from which the script is run. The script does not transmit data to other parties like Stack Overflow. All API calls performed are read-only, so there is no risk of editing or adding content to your Stack Internal instance.
