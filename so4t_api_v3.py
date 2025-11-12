@@ -25,10 +25,10 @@ class V3Client(object):
                 'User-Agent': 'so4t_api_user_report/1.0 (http://your-app-url.com; your-contact@email.com)'
             }
 
-        if "stackoverflowteams.com" in url: # Stack Overflow Business or Basic
+        if "stackoverflowteams.com" in url: # Stack Internal (Business) or Basic
             self.team_slug = url.split("https://stackoverflowteams.com/c/")[1]
             self.api_url = f"https://api.stackoverflowteams.com/v3/teams/{self.team_slug}"
-        else: # Stack Overflow Enterprise
+        else: # Stack Internal (Enterprise)
             self.api_url = url + "/api/v3"
 
         self.ssl_verify = self.test_connection() # test the API connection
