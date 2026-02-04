@@ -1,5 +1,5 @@
 # Stack Internal API User Report (so4t_api_user_report)
-A Python script that uses the Stack Internal API creates a CSV report of how well each user performs. You can see an example of what the output looks like in the Examples directory ([here](https://github.com/StackExchange/so4t_user_report/blob/main/Examples/user_metrics.csv)).
+A Python script that uses the Stack Internal API creates a CSV report of how well each user performs. You can see an example of what the output looks like in the Examples directory ([here](https://github.com/StackExchange/so4t_api_user_report/blob/main/Examples/user_metrics.csv)).
 
 ## Table of Contents
 * [Requirements](https://github.com/StackExchange/so4t_api_user_report?tab=readme-ov-file#requirements)
