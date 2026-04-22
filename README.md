@@ -17,7 +17,7 @@ A Python script that uses the Stack Internal API creates a CSV report of how wel
 
 ## Requirements
 * A Stack Internal instance (Basic, Business, or Enterprise); for Enterprise, version 2023.3 or later
-* Python 3.8 or higher ([download](https://www.python.org/downloads/))
+* Python 3.10 or higher ([download](https://www.python.org/downloads/))
 * Operating system: Linux, MacOS, or Windows
 
 If using the `--web-client` argument, there are additional requirements (details in [Advanced Usage](https://github.com/StackExchange/so4t_api_user_report#--web-client) section)

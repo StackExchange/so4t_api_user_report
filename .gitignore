@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Script output
+csv/
+data/
+*_user_metrics.csv
+*_user_metrics.json
+users.json
+reputation_history.json
+questions.json
+articles.json
+tags.json
+user_metrics.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp

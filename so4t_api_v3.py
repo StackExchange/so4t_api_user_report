@@ -1,8 +1,12 @@
 # Standard Python libraries
 import json
+import time
 
 # Third-party libraries
 import requests
+
+# Local libraries
+import so4t_request_validate
 
 
 class V3Client(object):
@@ -122,18 +126,39 @@ class V3Client(object):
 
         data = []
         while True:
-            if method == 'get':
-                response = get_response(endpoint_url, headers=self.headers, params=params, 
-                                        verify=self.ssl_verify)
-            else:
-                response = get_response(endpoint_url, headers=self.headers, json=params, 
-                                        verify=self.ssl_verify)
+            try:
+                if method == 'get':
+                    response = get_response(endpoint_url, headers=self.headers, params=params,
+                                            verify=self.ssl_verify,
+                                            timeout=so4t_request_validate.timeout)
+                else:
+                    response = get_response(endpoint_url, headers=self.headers, json=params,
+                                            verify=self.ssl_verify,
+                                            timeout=so4t_request_validate.timeout)
+            except Exception as ex:
+                so4t_request_validate.handle_except(ex)
+                continue
 
             if response.status_code not in [200, 201, 204]:
                 print(f"API call to {endpoint_url} failed with status code {response.status_code}")
                 print(f"Response from server: {response.text}")
                 raise SystemExit
-                        
+
+            # Respect v3 throttle headers to avoid being blocked
+            burst_left = response.headers.get('x-burst-throttle-calls-left')
+            if burst_left is not None and int(burst_left) < 5:
+                burst_wait = int(response.headers.get('x-burst-throttle-seconds-until-full', 2))
+                print(f"Approaching burst throttle limit ({burst_left} calls left). "
+                      f"Waiting {burst_wait} seconds...")
+                time.sleep(burst_wait)
+
+            bucket_left = response.headers.get('x-token-bucket-calls-left')
+            if bucket_left is not None and int(bucket_left) < 100:
+                bucket_wait = int(response.headers.get('x-token-bucket-seconds-until-next-refill', 60))
+                print(f"Token bucket running low ({bucket_left} tokens left). "
+                      f"Waiting {bucket_wait} seconds for refill...")
+                time.sleep(bucket_wait)
+
             try:
                 json_data = response.json()
             except json.decoder.JSONDecodeError: # some API calls do not return JSON data
