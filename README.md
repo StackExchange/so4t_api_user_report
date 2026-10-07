@@ -1,6 +1,6 @@
 # Stack Internal API User Report
 
-**Use [index.html](index.html) for new reports.** It is a stand-alone HTML page that reads Stack Internal API v3 and downloads a CSV user report. No Python installation, build step, or third-party package is needed. The Python scripts remain in this repository only for historical reference; the old report still depends on API v2 and should not be used for new reports.
+**Use [index.html](index.html) for new reports.** It reads Stack Internal API v3 and downloads a CSV user report. Keep the `assets/` folder beside the HTML file so its bundled Stacks styles load. No Python installation or build step is needed. The Python scripts remain in this repository only for historical reference; the old report still depends on API v2 and should not be used for new reports.
 
 ## Run the report
 
@@ -9,7 +9,7 @@
 3. Enter an API v3 access token with permission to read the report data. The token is used in Bearer authentication for requests to the selected API and is not saved in the HTML file or CSV.
 4. Optionally choose a UTC date range or a maximum number of users, then select **Create CSV report**. When it finishes, select **Download CSV**.
 
-The page requests API v3 directly from the browser. Your Stack Internal API must allow requests from the page's browser origin. If your browser reports a CORS error when the file is opened locally, ask your site administrator to allow that origin or serve this same HTML file from an allowed HTTPS origin. The page cannot override the API's CORS policy.
+The page requests API v3 directly from the browser. Your Stack Internal API must allow requests from the page's browser origin. If your browser reports a CORS error when the file is opened locally, ask your site administrator to allow that origin or serve the HTML file and `assets/` folder from an allowed HTTPS origin. The page cannot override the API's CORS policy.
 
 ## Report fields and limits
 

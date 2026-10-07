@@ -4,78 +4,71 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Stack Internal user report</title>
+  <link rel="stylesheet" href="assets/stacks.min.css">
+  <link rel="stylesheet" href="assets/report-ui.css">
   <style>
-    :root { color-scheme: light; font: 16px/1.5 system-ui, sans-serif; background: #f4f6f8; color: #20242a; }
-    * { box-sizing: border-box; }
-    body { max-width: 820px; margin: 0 auto; padding: 2rem 1rem 4rem; }
-    h1 { margin-bottom: .25rem; font-size: 2rem; }
-    h2 { font-size: 1.2rem; margin-top: 0; }
-    p { margin-top: .4rem; }
-    .card { background: white; border: 1px solid #d6dce2; border-radius: 10px; padding: 1.3rem; margin-top: 1.2rem; }
+    body.report-app { --report-width: 860px; }
+    .card { padding: 24px; margin-top: 20px; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
-    label { display: block; font-weight: 600; }
-    input { display: block; width: 100%; margin-top: .3rem; padding: .65rem; border: 1px solid #aeb8c3; border-radius: 5px; font: inherit; }
-    input[type="checkbox"] { display: inline-block; width: auto; margin: 0 .5rem 0 0; }
-    .checks label { font-weight: 400; margin-top: .6rem; }
-    small, .muted { color: #56616e; }
-    button, .button { display: inline-block; border: 0; border-radius: 5px; background: #1565c0; color: white; padding: .7rem 1rem; font: inherit; font-weight: 600; cursor: pointer; text-decoration: none; }
-    button:disabled { opacity: .55; cursor: default; }
-    #cancel { background: #606b75; margin-left: .5rem; }
-    #download { margin-left: .5rem; }
+    .form-field { margin: 18px 0; }
+    .form-field .s-label { display: block; }
+    .form-field .s-input { margin-top: 6px; }
+    .form-field .s-description { display: block; margin-top: 5px; }
+    .section-title { margin-top: 30px !important; }
+    .checks { display: grid; gap: 10px; margin: 20px 0; }
+    .checks .s-label { margin: 0; font-weight: 400; }
+    .actions { margin-top: 20px; }
     #status { white-space: pre-wrap; margin-top: 1rem; }
     #warnings { padding-left: 1.3rem; }
     #warnings:empty { display: none; }
-    .error { color: #a01919; }
-    .success { color: #17672d; }
-    code { overflow-wrap: anywhere; }
+    .required-note { color: var(--black-500); font-size: 13px; }
   </style>
 </head>
-<body>
-  <header>
-    <h1>Stack Internal user report</h1>
-    <p class="muted">A single-file, API v3 report. All requests and CSV processing run in this browser tab.</p>
-  </header>
-
+<body class="report-app">
+  <div class="brand-bar"><div class="brand-bar-inner"><span class="brand-name">Stack Internal</span><span class="brand-meta">Browser tools · API v3</span></div></div>
   <main>
+    <header class="page-header">
+      <h1 class="fs-headline2">User report</h1>
+      <p class="intro">Build a user metrics CSV from API v3. Requests and CSV processing run in this browser tab.</p>
+    </header>
     <form id="report-form" class="card">
-      <h2>Connect</h2>
-      <label for="site">Stack Internal URL</label>
-      <input id="site" name="site" type="url" required placeholder="https://your-site.stackenterprise.co or https://stackoverflowteams.com/c/your-team" autocomplete="url">
-      <p><small>Enter your Enterprise site URL or Basic/Business team URL.</small></p>
-      <label for="token">API v3 access token</label>
-      <input id="token" name="token" type="password" required autocomplete="off" spellcheck="false">
-      <p><small>The token stays in this tab and is sent only as a Bearer token to the selected API. It is not saved in the page or CSV.</small></p>
+      <h2 class="fs-title">Connect</h2>
+      <p class="required-note">Required fields <abbr class="s-required-symbol" title="required">*</abbr></p>
+      <div class="form-field s-form-group">
+        <label class="s-label" for="site">Stack Internal URL <abbr class="s-required-symbol" title="required">*</abbr></label>
+        <input class="s-input" id="site" name="site" type="url" required placeholder="https://your-site.stackenterprise.co or https://stackoverflowteams.com/c/your-team" autocomplete="url">
+        <p class="s-description">Enter your Enterprise site URL or Basic/Business team URL.</p>
+      </div>
+      <div class="form-field s-form-group">
+        <label class="s-label" for="token">API v3 access token <abbr class="s-required-symbol" title="required">*</abbr></label>
+        <input class="s-input" id="token" name="token" type="password" required autocomplete="off" spellcheck="false">
+        <p class="s-description">The token stays in this tab and is sent only to the selected API. It is not saved in the page or CSV.</p>
+      </div>
 
-      <h2>Report options</h2>
+      <h2 class="fs-title section-title">Report options</h2>
       <div class="grid">
-        <label for="start">Start date (UTC, inclusive)
-          <input id="start" name="start" type="date">
-        </label>
-        <label for="end">End date (UTC, inclusive)
-          <input id="end" name="end" type="date">
-        </label>
-        <label for="limit">Maximum users (optional)
-          <input id="limit" name="limit" type="number" min="1" step="1" placeholder="All users">
-        </label>
+        <div class="s-form-group"><label class="s-label" for="start">Start date (UTC, inclusive)</label><input class="s-input" id="start" name="start" type="date"></div>
+        <div class="s-form-group"><label class="s-label" for="end">End date (UTC, inclusive)</label><input class="s-input" id="end" name="end" type="date"></div>
+        <div class="s-form-group"><label class="s-label" for="limit">Maximum users (optional)</label><input class="s-input" id="limit" name="limit" type="number" min="1" step="1" placeholder="All users"></div>
       </div>
       <div class="checks">
-        <label><input id="include-comments" type="checkbox" checked>Count comments (one paginated request per user)</label>
-        <label><input id="include-smes" type="checkbox" checked>Include subject matter expert tags</label>
+        <div class="s-checkbox"><input id="include-comments" type="checkbox" checked><label class="s-label" for="include-comments">Count comments (one paginated request per user)</label></div>
+        <div class="s-checkbox"><input id="include-smes" type="checkbox" checked><label class="s-label" for="include-smes">Include subject matter expert tags</label></div>
       </div>
-      <p><small>Large sites can take time. The page reads all questions so it can count answers posted during the selected period to older questions.</small></p>
-      <button id="run" type="submit">Create CSV report</button>
-      <button id="cancel" type="button" disabled>Cancel</button>
-      <a id="download" class="button" hidden>Download CSV</a>
+      <p class="s-description">Large sites can take time. The page reads all questions so it can count answers posted during the selected period to older questions.</p>
+      <div class="actions"><button class="s-btn" id="run" type="submit">Create CSV report</button>
+      <button class="s-btn s-btn__tonal" id="cancel" type="button" disabled>Cancel</button>
+      <a id="download" class="s-btn" hidden>Download CSV</a></div>
     </form>
 
     <section class="card" aria-live="polite">
-      <h2>Progress</h2>
-      <div id="status">Ready.</div>
+      <h2 class="fs-title">Progress</h2>
+      <div id="status" class="s-notice s-notice__info">Ready.</div>
       <ul id="warnings"></ul>
     </section>
 
     <section class="card">
-      <h2>About the numbers</h2>
+      <h2 class="fs-title">About the numbers</h2>
       <p>Date filters apply to the creation dates of questions, answers, articles, and comments. Post score is the current net score of posts created in that period. API v3 does not expose separate upvote and downvote totals for these posts.</p>
       <p>Historical net reputation change and account dates/status require the Enterprise v3 management endpoints and sufficient permission. If unavailable, their CSV cells are blank. Current reputation is always a separate column.</p>
       <p>Direct and group subject matter expert assignments are included. The report contains only content the token can read; deleted or inaccessible content may be absent. A local HTML page also requires the API to allow browser requests from its origin.</p>
@@ -153,7 +146,7 @@
   }
   function setStatus(message, kind = '') {
     status.textContent = message;
-    status.className = kind;
+    status.className = 's-notice ' + (kind === 'error' ? 's-notice__danger' : kind === 'success' ? 's-notice__success' : 's-notice__info');
   }
   function makeClient(base, token, signal) {
     async function get(path, params = {}) {
